@@ -15,6 +15,7 @@
 
 import os
 import sys
+import argparse
 import datetime
 import requests
 import xml.etree.ElementTree as ET
@@ -111,7 +112,11 @@ def get_blogger_service():
 
 
 def main():
-    blog_id = os.environ["BLOGGER_BLOG_ID"]
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--dry-run", action="store_true", help="Print post content and skip publishing")
+    args = parser.parse_args()
+
+    blog_id = os.environ.get("BLOGGER_BLOG_ID")
 
     items = fetch_trends()
     if not items:
@@ -119,6 +124,20 @@ def main():
         sys.exit(1)
 
     title, body = build_post(items)
+
+    # dry-run: 출력만 하고 발행하지 않음
+    dry_run_env = os.environ.get("DRY_RUN")
+    dry_run = args.dry_run or (dry_run_env and dry_run_env.lower() in ("1", "true", "yes"))
+
+    if dry_run:
+        print("--- DRY RUN: 게시를 수행하지 않습니다 ---")
+        print(f"제목: {title}")
+        print("본문(일부):\n", body[:1000])
+        return
+
+    if not blog_id:
+        print("환경변수 BLOGGER_BLOG_ID가 설정되어 있지 않습니다.", file=sys.stderr)
+        sys.exit(1)
 
     service = get_blogger_service()
     post_body = {"title": title, "content": body}

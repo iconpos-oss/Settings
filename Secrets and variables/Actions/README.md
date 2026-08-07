@@ -1,0 +1,67 @@
+# Blogger 실시간 트렌드 자동 게시 봇
+
+매일 아침(KST 07:00) 구글 실시간 트렌드(대한민국)를 가져와 Blogger에 자동으로 글을 발행합니다.
+GitHub Actions의 무료 크론잡을 사용하므로 별도 서버 비용이 들지 않습니다.
+
+## 준비 단계
+
+### 1. Blogger 블로그 ID 확인
+블로그 관리 화면 URL에서 숫자로 된 ID를 확인합니다.
+예: `blogger.com/blog/posts/6023330275183611634` → 이 앞부분 URL의 blogID 값
+(블로그 설정 > 기본사항 에서도 확인 가능)
+
+### 2. Google Cloud Console에서 OAuth 클라이언트 생성
+1. https://console.cloud.google.com 에서 새 프로젝트 생성
+2. "API 및 서비스 > 라이브러리"에서 **Blogger API v3** 검색 후 사용 설정
+3. "API 및 서비스 > OAuth 동의 화면" 설정 (테스트 사용자에 본인 계정 추가)
+4. "API 및 서비스 > 사용자 인증 정보 > 사용자 인증 정보 만들기 > OAuth 클라이언트 ID"
+   - 애플리케이션 유형: **데스크톱 앱**
+5. 생성된 JSON을 다운로드하여 `client_secret.json`으로 저장
+
+### 3. 리프레시 토큰 발급 (내 컴퓨터에서 1회만 실행)
+```bash
+pip install google-auth-oauthlib
+python get_refresh_token.py
+```
+브라우저가 열리면 블로그 계정으로 로그인 후 동의합니다.
+터미널에 출력되는 `client_id`, `client_secret`, `refresh_token` 값을 복사해둡니다.
+
+### 4. GitHub 저장소 준비
+1. 이 폴더를 새 GitHub 저장소로 push
+2. 저장소 > Settings > Secrets and variables > Actions 에서 다음 4개 등록:
+   - `BLOGGER_BLOG_ID`
+   - `GOOGLE_CLIENT_ID`
+   - `GOOGLE_CLIENT_SECRET`
+   - `GOOGLE_REFRESH_TOKEN`
+
+### 5. 동작 확인
+- Actions 탭 > "Daily Blogger Trend Post" > "Run workflow"로 수동 실행해 테스트
+- 정상 동작하면 매일 KST 07:00에 자동으로 실행됩니다
+
+## 커스터마이징
+- `post_trends.py`의 `MAX_ITEMS`로 가져올 트렌드 개수 조절
+- `build_post()` 함수에서 글 제목/본문 형식 자유롭게 수정
+- 실행 시간을 바꾸려면 `.github/workflows/daily-trend-post.yml`의 cron 값 수정
+  (cron은 UTC 기준이므로 KST -9시간으로 계산)
+
+## 주의사항
+- Google Trends RSS는 비공식 엔드포인트라 구글 측에서 형식이 바뀔 수 있습니다
+- 뉴스 제목/링크만 인용하고 본문 전체를 복사하지 않도록 스크립트가 설계되어 있습니다 (저작권 문제 방지)
+
+## 안전한 테스트 및 배포 가이드
+
+- 로컬에서 RSS가 차단된 경우 샘플 데이터로 테스트:
+   ```bash
+   USE_SAMPLE_DATA=1 python "Secrets and variables/Actions/test_runner.py"
+   ```
+
+- `post_trends.py`는 `--dry-run` 옵션과 `DRY_RUN` 환경변수를 지원합니다. 게시 전 내용 확인을 권장합니다:
+   ```bash
+   # CLI 옵션 사용
+   python "Secrets and variables/Actions/post_trends.py" --dry-run
+
+   # 또는 환경변수로 설정
+   DRY_RUN=true python "Secrets and variables/Actions/post_trends.py"
+   ```
+
+- GitHub Actions 수동 실행 시 기본값은 `dry_run=true`로 되어 있으므로 버튼으로 실행해 결과를 확인하세요. 실제 게시를 원할 경우 수동 실행에서 `dry_run`을 `false`로 설정하거나, 스케줄러(매일 실행)는 자동으로 게시합니다.
