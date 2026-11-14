@@ -24,6 +24,9 @@ from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 
 TRENDS_RSS_URLS = [
+    # 구글 트렌드 새 RSS 엔드포인트 (200 OK 확인). 이 주소를 먼저 사용한다.
+    "https://trends.google.com/trending/rss?geo=KR",
+    # 아래 예전 주소들은 현재 404를 반환한다. 혹시 되살아날 경우를 위한 폴백으로만 남겨 둔다.
     "https://trends.google.com/trends/trendingsearches/daily/rss?geo=KR&hl=ko",
     "https://trends.google.co.kr/trends/trendingsearches/daily/rss?geo=KR&hl=ko",
     "https://www.google.com/trends/trendingsearches/daily/rss?geo=KR&hl=ko",
@@ -56,8 +59,9 @@ def fetch_trends():
         return tag.split('}')[-1] if '}' in tag else tag
 
     items = []
-    # findall with .//item (works even if namespaced)
-    for item in root.findall('.//item')[:MAX_ITEMS]:
+    # 네임스페이스 유무와 상관없이 item 요소를 모두 찾는다.
+    item_elems = [el for el in root.iter() if local_name(el.tag) == 'item']
+    for item in item_elems[:MAX_ITEMS]:
         title = ''
         news_title = ''
         news_url = ''
@@ -69,10 +73,12 @@ def fetch_trends():
                 # news_item 내부에서 제목/링크를 찾음
                 for nchild in child:
                     nname = local_name(nchild.tag)
-                    if nname in ('news_item_title', 'news_item_title') and nchild.text:
+                    if nname == 'news_item_title' and nchild.text:
                         news_title = nchild.text.strip()
-                    if nname in ('news_item_url', 'news_item_url') and nchild.text:
+                    if nname == 'news_item_url' and nchild.text:
                         news_url = nchild.text.strip()
+        if not title:
+            continue
         items.append((title, news_title, news_url))
     return items
 
