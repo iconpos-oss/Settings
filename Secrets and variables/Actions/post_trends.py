@@ -83,8 +83,13 @@ def fetch_trends():
     return items
 
 
+KST = datetime.timezone(datetime.timedelta(hours=9))
+
+
 def build_post(items):
-    today = datetime.date.today().strftime("%Y년 %m월 %d일")
+    # GitHub Actions 러너는 UTC라서 그대로 두면 아침 7시 발행 글이 전날 날짜로 찍힌다.
+    # 발행 기준 날짜는 항상 한국 시간(KST)으로 계산한다.
+    today = datetime.datetime.now(KST).date().strftime("%Y년 %m월 %d일")
     title = f"{today} 실시간 인기 검색어 TOP {len(items)}"
 
     rows = []
