@@ -274,7 +274,7 @@ def find_existing_post(service, blog_id, date_label, max_checked=100):
     token = None
     checked = 0
     while checked < max_checked:
-        kwargs = {"blogId": blog_id, "status": "live", "maxResults": 50, "fetchBodies": False}
+        kwargs = {"blogId": blog_id, "status": "LIVE", "maxResults": 50, "fetchBodies": False}
         if token:
             kwargs["pageToken"] = token
         resp = service.posts().list(**kwargs).execute()
