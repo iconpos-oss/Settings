@@ -44,6 +44,29 @@ python get_refresh_token.py
 - 실행 시간을 바꾸려면 `.github/workflows/daily-trend-post.yml`의 cron 값 수정
   (cron은 UTC 기준이므로 KST -9시간으로 계산)
 
+## 검색어·기사 품질 규칙
+- 구글 트렌드 한국 RSS에는 태국어(`สเปน พบ อังกฤษ`), 러시아어(`испания – англия`),
+  인도네시아어(`spanyol vs inggris`) 같은 해외 검색어가 섞여 들어옵니다.
+  - 한글(가-힣)이 있는 검색어만 남깁니다.
+  - 한글이 없어도 `KBO`, `F1`처럼 영문·숫자로만 된 검색어는 국내 기사가 붙어 있을 때만 남깁니다.
+    (해외 기사만 붙은 영문 검색어는 해외 스포츠 스팸으로 보고 제외)
+  - 태국어·키릴·아랍어·한자·가나 등 비라틴 문자 검색어는 제외합니다.
+- 키워드마다 `<ht:news_item>` 목록 전체를 보고 키워드와 실제로 겹치는 기사를 골라 붙입니다
+  (이전에는 각 항목의 마지막 기사가 무조건 붙어서 '집'에 배종옥 기사가 붙는 식으로 어긋났습니다).
+  키워드와 겹치는 기사가 없으면 기사를 생략합니다.
+- 제외된 검색어는 실행 로그에 `- 제외: '...' (사유)` 형태로 남습니다. 그래서 하루 키워드 수는
+  10개보다 적을 수 있고, 제목의 `TOP N`도 실제 개수로 표시됩니다(트렌드 RSS는 최대 10개만 제공).
+
+## 같은 날 중복 발행 방지
+- 실제 발행(`DRY_RUN=false`) 시 Blogger API로 최근 글을 확인해, 제목이 오늘 날짜(KST)
+  (`YYYY년 MM월 DD일 ...`)로 시작하는 글이 이미 있으면 발행하지 않고 건너뜁니다(로그 남기고 정상 종료).
+  GitHub Actions의 `schedule`은 수십 분~수 시간 늦게 실행될 수 있어 같은 날 두 번 올라가는 것을 막기 위한 장치입니다.
+- 중복 검사 자체가 실패하면 중복 위험을 피하려고 발행하지 않고 워크플로를 실패로 끝냅니다.
+  실제로 오늘 글이 없는 것이 확실할 때는 수동 실행에서 `force=true`로 강제 발행할 수 있습니다.
+  ```bash
+  gh workflow run daily-trend-post.yml -R iconpos-oss/Settings -f dry_run=false -f force=true
+  ```
+
 ## 주의사항
 - Google Trends RSS는 비공식 엔드포인트라 구글 측에서 형식이 바뀔 수 있습니다
 - 뉴스 제목/링크만 인용하고 본문 전체를 복사하지 않도록 스크립트가 설계되어 있습니다 (저작권 문제 방지)
@@ -62,6 +85,11 @@ python get_refresh_token.py
 
    # 또는 환경변수로 설정
    DRY_RUN=true python "Secrets and variables/Actions/post_trends.py"
+   ```
+
+- `test_runner.py`는 RSS 파싱 결과와 함께 중복 발행 방지 동작(오늘 글 있음→건너뜀, 없음→발행, force→강제 발행)을 가짜 Blogger 서비스로 검사합니다. 실제 발행은 하지 않습니다:
+   ```bash
+   cd "Secrets and variables/Actions" && python test_runner.py
    ```
 
 - GitHub Actions 수동 실행 시 기본값은 `dry_run=true`로 되어 있으므로 버튼으로 실행해 결과를 확인하세요. 실제 게시를 원할 경우 수동 실행에서 `dry_run`을 `false`로 설정하거나, 스케줄러(매일 실행)는 자동으로 게시합니다.
