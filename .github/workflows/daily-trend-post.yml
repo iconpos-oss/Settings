@@ -2,8 +2,8 @@ name: Daily Blogger Trend Post
 
 on:
   schedule:
-    # 매일 KST 07:00 -> UTC 기준 22:00 (이전 날)
-    - cron: '0 22 * * *'
+    # 매일 KST 07:17 -> UTC 기준 22:17 (이전 날)
+    - cron: '17 22 * * *'
   workflow_dispatch:
     inputs:
       dry_run:
