@@ -482,9 +482,9 @@ def build_summary(item):
         lead += f"「{news_title}」 기사가 함께 노출되었습니다."
         sentences.append(lead)
         sentences.append(
-            "언론사가 공개한 요약이 없어 제목으로만 정리했으며, 자세한 내용은 아래 기사 원문에서 확인하실 수 있습니다."
+            "기사 요약 없이 제목만 담았으며, 자세한 내용은 아래 기사 원문에서 확인하실 수 있습니다."
             if url else
-            "언론사가 공개한 요약과 원문 링크가 없어 제목으로만 정리했습니다."
+            "기사 요약과 원문 링크 없이 제목만 담았습니다."
         )
     else:
         sentences.append(f"구글 트렌드에서 ‘{keyword}’가 오늘의 실시간 인기 검색어로 올랐습니다.")
