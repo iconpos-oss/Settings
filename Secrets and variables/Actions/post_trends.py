@@ -85,6 +85,8 @@ DATELINE_RE = re.compile(
     r"(?:[가-힣]{2,5}\s*기자\s*=\s*)?"
 )
 PHOTO_CREDIT_RE = re.compile(r"/\s*사진\s*=\s*[^\s\[/]{1,20}\s*")
+# 요약 중간에 섞이는 [파이낸셜뉴스], [속보] 같은 짧은 대괄호 토막
+BRACKET_NOISE_RE = re.compile(r"\s*\[[^\[\]]{1,15}\]\s*")
 SENTENCE_END_CHARS = ".!?。！？…\"”’'"
 
 
@@ -408,6 +410,7 @@ def tidy_summary_text(text):
         return ""
     text = PHOTO_CREDIT_RE.sub(" ", text)
     text = DATELINE_RE.sub("", text)
+    text = BRACKET_NOISE_RE.sub(" ", text)
     text = text.replace("…", " ")
     text = re.sub(r"\.{2,}", " ", text)
     text = re.sub(r"\s+([.,!?])", r"\1", text)
